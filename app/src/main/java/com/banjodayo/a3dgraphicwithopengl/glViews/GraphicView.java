@@ -7,6 +7,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLU;
 import android.os.Handler;
@@ -77,12 +78,14 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
     Handler mThreadHandler = new Handler(); //used in SetTextMessage
 
     //constants for scene objects in GPU buffer
-    final int mFLOOR = 1;
+    //final int mFLOOR = 1;
     final int mBALL  = 2;
     final int mPOOL  = 3;
     final int mWALL  = 4;
     final int mDROP  = 5;
     final int mSPLASH = 6;
+
+    final int mPOINT = 1;
 
     //need to store length of each vertex buffer
     int[] mBufferLen = new int[] {0,0,0,0,0,0,0}; //0/Floor/Ball/Pool/Wall/Drop/Splash
@@ -115,15 +118,19 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
 
     //options menu defaults
     public boolean ShowBall = true;
-    public boolean ShowFloor = true;
-    public boolean ShowFountain = true;
-    public boolean ShowPool = true;
+    public boolean ShowFloor = false;
+    public boolean ShowFountain = false;
+    public boolean ShowPool = false;
     public boolean RotateScene = true;
     public boolean UseTiltAngle = false;
     public boolean MultiBillboard = true;
     public boolean ShowFPS = true;
     public boolean Paused = false;
 
+    //add
+    public boolean ShowPoint = true;
+
+    //0813問題 紅色點太小
     public GraphicView(Activity pActivity)
     {
         super(pActivity);
@@ -176,15 +183,32 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
         //set background frame color
         gl.glClearColor(0f, 0f, 0f, 1.0f); //black
         //generate vertex arrays for scene objects
-        BuildFloor(gl);
+        BuildPoint(gl);
+        //BuildFloor(gl);
         BuildBall(gl);
         BuildPool(gl);
         BuildWall(gl);
         BuildDrop(gl);
         BuildSplash(gl);
+
+        //新增點
+        //BuildPoint(gl);
     }
 
-    void BuildFloor(GL11 gl)
+    void BuildPoint(GL11 gl){
+        //every POINT has the same coordinates
+        float vtx[] = {
+                // X,  Y, Z
+                0f, 0f, 0,
+                0.5f,0.5f, 0.5f,
+                -0.1f,-0.1f, 0.3f
+        };
+
+        StoreVertexData(gl, vtx, mPOINT); //store in GPU buffer
+
+    }
+
+    /*void BuildFloor(GL11 gl)
     {
         //7*7+6*6 = 85 quads = 170 triangles = 510 vertices = 1530 floats[x/y/z]
         int sqrSize = 20;
@@ -219,7 +243,7 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
         }
 
         StoreVertexData(gl, vtx, mFLOOR); //store in GPU buffer
-    }
+    }*/
 
     void BuildBall(GL11 gl)
     {
@@ -551,6 +575,13 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
     //float splashCtr = 0;
     void DrawSceneObjects(GL11 gl)
     {
+        //繪製點
+        if (ShowPoint) {
+            gl.glPushMatrix();
+            gl.glColor4f(0.9f, 0f, 0f, 1);
+            DrawObject(gl, GLES20.GL_POINTS,mPOINT);
+            gl.glPopMatrix();
+        }
         if (ShowBall)
         {
             //draw first color
@@ -593,11 +624,11 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
             gl.glPopMatrix();
         }
 
-        if (ShowFloor)
+        /*if (ShowFloor)
         {
             gl.glColor4f(0.7f, 1f, 0.7f, 1f); //light green
             DrawObject(gl, GL11.GL_TRIANGLES, mFLOOR);
-        }
+        }*/
     }
 
     void DrawObject(GL11 gl, int pShapeType, int pObjNum)
