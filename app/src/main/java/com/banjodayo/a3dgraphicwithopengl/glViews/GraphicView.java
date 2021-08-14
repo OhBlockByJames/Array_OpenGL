@@ -78,7 +78,7 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
     Handler mThreadHandler = new Handler(); //used in SetTextMessage
 
     //constants for scene objects in GPU buffer
-    //final int mFLOOR = 1;
+    final int mFLOOR = 1;
     final int mBALL  = 2;
     final int mPOOL  = 3;
     final int mWALL  = 4;
@@ -130,7 +130,7 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
     //add
     public boolean ShowPoint = true;
 
-    //0813問題 紅色點太小
+
     public GraphicView(Activity pActivity)
     {
         super(pActivity);
@@ -179,11 +179,20 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
     @Override
     public void onSurfaceCreated(GL10 gl1, EGLConfig pConfig)
     {
+        //every POINT has the same coordinates
+        float vtx[] = {
+                // X,  Y, Z
+                0f, 0f, 0,
+                10f,20f, 30f,
+                -10f,-20f, 10f,
+                20f,20f,20f
+        };
+
         GL11 gl = (GL11)gl1; //we need 1.1 functionality
         //set background frame color
         gl.glClearColor(0f, 0f, 0f, 1.0f); //black
         //generate vertex arrays for scene objects
-        BuildPoint(gl);
+        BuildPoint(gl,vtx);
         //BuildFloor(gl);
         BuildBall(gl);
         BuildPool(gl);
@@ -195,17 +204,8 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
         //BuildPoint(gl);
     }
 
-    void BuildPoint(GL11 gl){
-        //every POINT has the same coordinates
-        float vtx[] = {
-                // X,  Y, Z
-                0f, 0f, 0,
-                0.5f,0.5f, 0.5f,
-                -0.1f,-0.1f, 0.3f
-        };
-
-        StoreVertexData(gl, vtx, mPOINT); //store in GPU buffer
-
+    void BuildPoint(GL11 gl,float vertex[]){
+        StoreVertexData(gl, vertex, mPOINT); //store in GPU buffer
     }
 
     /*void BuildFloor(GL11 gl)
@@ -578,7 +578,9 @@ public class GraphicView extends  GLSurfaceView implements GLSurfaceView.Rendere
         //繪製點
         if (ShowPoint) {
             gl.glPushMatrix();
-            gl.glColor4f(0.9f, 0f, 0f, 1);
+            gl.glColor4f(1f, 1f, 0f, 1);
+            //POINT SIZE : 用PIXEL定義該點大小
+            gl.glPointSize(50);
             DrawObject(gl, GLES20.GL_POINTS,mPOINT);
             gl.glPopMatrix();
         }
