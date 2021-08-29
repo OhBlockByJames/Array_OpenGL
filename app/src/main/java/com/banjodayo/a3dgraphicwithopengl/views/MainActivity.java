@@ -33,16 +33,19 @@ import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 
+import static javax.microedition.khronos.opengles.GL10.GL_COLOR_ARRAY;
+import static javax.microedition.khronos.opengles.GL10.GL_FLOAT;
+import static javax.microedition.khronos.opengles.GL10.GL_LINE_SMOOTH;
+import static javax.microedition.khronos.opengles.GL10.GL_TEXTURE_2D;
+import static javax.microedition.khronos.opengles.GL10.GL_VERTEX_ARRAY;
+
 public class MainActivity extends AppCompatActivity {
 
     private GraphicView graphicView;
     private float vertex[] = {
-            30f,30f,30f,
-            40f,50f,65f,
+            15.0f, 15.0f, 20.0f,
+            10.0f,20.0f, 30.0f,
     };
-
-
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -119,18 +122,6 @@ public class MainActivity extends AppCompatActivity {
 
         //need to store length of each vertex buffer
         int[] mBufferLen = new int[] {0,0,0,0,0,0,0}; //0/Floor/Ball/Pool/Wall/Drop/Splash
-        EGLDisplay mDisplay = null;
-        EGLSurface mBufferSurface = null;
-        EGLSurface mCurSurface = null;
-        boolean mSurfaceToggle = true;
-
-        //fountain parameters
-        int mStreamCnt = 10; //should divide evenly into 360
-        int mDropsPerStream = 30; //should divide evenly into 180
-        int mRepeatLen = 180/mDropsPerStream; //distance between drops
-        float mArcRad = 30; //stream arc radius
-        //for storing drop positions //3 floats per vertex [x/y/z]
-        float[][] dropCoords = new float[mStreamCnt*mDropsPerStream][3];
 
         //accelerometer value set by activity
         public float AccelZ = 0;
@@ -142,9 +133,6 @@ public class MainActivity extends AppCompatActivity {
         public boolean UseTiltAngle = false;
         public boolean ShowFPS = true;
         public boolean Paused = false;
-
-        //add
-        public boolean ShowPoint = true;
 
         public GraphicView(Activity pActivity)
         {
@@ -208,9 +196,11 @@ public class MainActivity extends AppCompatActivity {
 
             GL11 gl = (GL11)gl1; //we need 1.1 functionality
             //set background frame color
-            gl.glClearColor(0f, 0f, 0f, 1.0f); //black
+            gl.glClearColor(0f, 0f, 0f, 1.0f);
+
+            paint(gl);
             //generate vertex arrays for scene objects
-            StoreVertexData(gl,vtx,mPOINT);
+            //StoreVertexData(gl,vtx,mPOINT);
             //BuildPoint(gl,vtx);
         }
 
@@ -231,6 +221,54 @@ public class MainActivity extends AppCompatActivity {
             (gl).glBufferData(GL11.GL_ARRAY_BUFFER, buffer.capacity()*4, buffer, GL11.GL_STATIC_DRAW);
             (gl).glBindBuffer(GL11.GL_ARRAY_BUFFER, 0); //unbind from buffer
             mBufferLen[pObjectNum] = buffer.capacity()/3; //store for drawing
+        }
+
+        void paint(GL11 gl)
+        {
+            gl.glEnable(GL_TEXTURE_2D);
+            gl.glEnableClientState(GL_COLOR_ARRAY);
+            gl.glEnableClientState(GL_VERTEX_ARRAY);
+
+
+            float vtx[]=
+                    {
+                            15.0f, 15.0f, 20.0f,
+                            10.0f,20.0f, 30.0f,
+                            -10.0f,-20.0f, 10.0f
+                    };
+            FloatBuffer vtxBuffer;
+            //不可直接wrap
+//            vtxBuffer = FloatBuffer.wrap(vtx);
+            ByteBuffer bb = ByteBuffer.allocateDirect(vtx.length*4);
+            bb.order(ByteOrder.nativeOrder());
+            vtxBuffer = bb.asFloatBuffer();
+            // add the coordinates to the FloatBuffer
+            vtxBuffer.put(vtx);
+            // set the buffer to read the first coordinate
+            vtxBuffer.position(0);
+
+            float color[]=
+                    {
+                            1.0f,0.0f,0.0f,1.0f,
+                            0.0f,1.0f,0.0f,1.0f,
+                            1.0f,1.0f,0.0f,1.0f
+                    };
+            FloatBuffer colorBuffer;
+            //colorBuffer = FloatBuffer.wrap(color);
+            ByteBuffer cb = ByteBuffer.allocateDirect(color.length*4);
+            cb.order(ByteOrder.nativeOrder());
+            colorBuffer = cb.asFloatBuffer();
+            // add the coordinates to the FloatBuffer
+            colorBuffer.put(color);
+            // set the buffer to read the first coordinate
+            colorBuffer.position(0);
+
+            gl.glPointSize(50);
+            gl.glVertexPointer(3,GL_FLOAT,0,vtxBuffer);
+            gl.glColorPointer(4,GL_FLOAT,0,colorBuffer);
+            gl.glDisableClientState(GL_VERTEX_ARRAY);
+            gl.glDisableClientState(GL_COLOR_ARRAY);
+            gl.glDisable(GL_TEXTURE_2D);
         }
 
         //this is called when the user changes phone orientation (portrait\landscape)
@@ -331,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mAngCtr > 360) mAngCtr -= 360;
             }
 
-            DrawObject(gl, GLES20.GL_POINTS,mPOINT,0f,0f,1f);
+            //DrawObject(gl, GLES20.GL_POINTS,mPOINT,0f,0f,1f);
 
             if (ShowFPS) //average fps across last 20 frames
             {
@@ -355,17 +393,22 @@ public class MainActivity extends AppCompatActivity {
 
         void DrawObject(GL11 gl, int pShapeType, int pObjNum,float r,float g,float b)
         {
-            //add 繪製點
+
             gl.glPushMatrix();
+
+            //add
+            //gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+            //gl.glColorPointer(4,GL_FLOAT,0,colors);
+
             gl.glColor4f(r, g, b, 1);
             //POINT SIZE : 用PIXEL定義該點大小
             gl.glPointSize(50);
             //activate vertex array type
-            gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+            gl.glEnableClientState(GL_VERTEX_ARRAY);
             //get vertices for this object id
             gl.glBindBuffer(GL11.GL_ARRAY_BUFFER, pObjNum);
             //each vertex is made up of 3 floats [x\y\z]
-            gl.glVertexPointer(3, GL11.GL_FLOAT, 0, 0);
+            gl.glVertexPointer(3, GL_FLOAT, 0, 0);
             //draw points
             gl.glDrawArrays(pShapeType, 0, mBufferLen[pObjNum]);
             //unbind from memory
